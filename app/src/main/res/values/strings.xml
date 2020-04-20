@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">Crunchyroll Downloader</string>
+    <string name="hls_Split_Value">"format":"adaptive_hls",</string>
+    <string name="hls_endString">","resolution":"adaptive"</string>
+    <string name="CC_String">"Hardsub Language:"</string>
+    <string name="Resu_String">"Resolution:"</string>
+    <string name="Settings_String">"Settings"</string>
+    <string name="OpenBrowser_String">"Settings"</string>
+    <string name="URL_prefill_String">"URL:"</string>
+
+</resources>

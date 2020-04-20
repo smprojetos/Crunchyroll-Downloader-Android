@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="lang">
+    <item>enUS</item>
+    <item>deDE</item>
+    <item>ptBR</item>
+    <item>esLA</item>
+    <item>frFR</item>
+    <item>arME</item>
+    <item>ruRU</item>
+    <item>itIT</item>
+    <item>esES</item>
+    </string-array>
+    <string-array name="Reso">
+        <item>1080p</item>
+        <item>720p</item>
+        <item>480p</item>
+        <item>360p</item>
+    </string-array>
+</resources>
