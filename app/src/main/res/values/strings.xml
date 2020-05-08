@@ -7,5 +7,7 @@
     <string name="Settings_String">"Settings"</string>
     <string name="OpenBrowser_String">"Settings"</string>
     <string name="URL_prefill_String">"URL:"</string>
-
+    <string name="state_idle">"Status: idle"</string>
+    <string name="state_idle_mass">"Status: Waiting for multi grapp"</string>
+    <string name="state_mass_detected">""Status: Multi Download detected!""</string>
 </resources>

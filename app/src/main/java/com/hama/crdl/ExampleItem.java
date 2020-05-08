@@ -1,19 +1,19 @@
 package com.hama.crdl;
 
 public class ExampleItem {
-    private int mImageResource;
+    private String mImageResource;
     private String mTextTitle;
     private String mTextProgess;
     private int mIntProgess;
 
-    public ExampleItem(int imageResource, String TextTitle, String TextProgess, int IntProgess) {
+    public ExampleItem(String imageResource, String TextTitle, String TextProgess, int IntProgess) {
         mImageResource = imageResource;
         mTextTitle = TextTitle;
         mTextProgess = TextProgess;
         mIntProgess = IntProgess;
     }
 
-    public int getImageResource() {
+    public String getImageResource() {
         return mImageResource;
     }
 

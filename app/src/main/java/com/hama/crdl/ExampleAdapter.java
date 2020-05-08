@@ -9,6 +9,8 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.squareup.picasso.Picasso;
+
 import java.util.ArrayList;
 
 
@@ -46,8 +48,8 @@ public class ExampleAdapter extends RecyclerView.Adapter<ExampleAdapter.ExampleV
     @Override
     public void onBindViewHolder(@NonNull ExampleViewHolder exampleViewHolder, int i) {
         ExampleItem currentItem = mExampleList.get(i);
-
-        exampleViewHolder.mImageView.setImageResource(currentItem.getImageResource());
+        Picasso.get().load(currentItem.getImageResource()).into( exampleViewHolder.mImageView);
+        //exampleViewHolder.mImageView.setImageResource(currentItem.getImageResource());
         exampleViewHolder.mTextView1.setText(currentItem.getTextTitle());
         exampleViewHolder.mTextView2.setText(currentItem.getTextProgess());
         exampleViewHolder.mProgressbar1.setProgress(currentItem.getmIntProgess());

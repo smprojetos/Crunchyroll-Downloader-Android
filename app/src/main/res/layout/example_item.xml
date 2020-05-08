@@ -16,9 +16,8 @@
             android:layout_width="80dp"
             android:layout_height="45dp"
             android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
-            android:layout_marginStart="4dp"
-            android:layout_marginTop="19dp"
+            android:layout_marginLeft="4dp"
+            android:layout_centerInParent="true"
             android:padding="2dp" />
 
         <TextView
@@ -33,7 +32,7 @@
             android:layout_toEndOf="@+id/imageView"
             android:text="Line 1"
             android:textColor="@android:color/black"
-            android:textSize="16sp"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
         <TextView

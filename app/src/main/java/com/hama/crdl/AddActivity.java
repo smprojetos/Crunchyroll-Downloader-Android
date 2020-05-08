@@ -1,10 +1,7 @@
 package com.hama.crdl;
 
 import android.content.Context;
-import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Environment;
-import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
@@ -14,23 +11,18 @@ import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import com.github.hiteshsondhi88.libffmpeg.FFmpeg;
-import com.github.hiteshsondhi88.libffmpeg.FFmpegExecuteResponseHandler;
-import com.github.hiteshsondhi88.libffmpeg.LoadBinaryResponseHandler;
-import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegCommandAlreadyRunningException;
-import com.github.hiteshsondhi88.libffmpeg.exceptions.FFmpegNotSupportedException;
-import java.util.Random;
+import org.apache.commons.lang3.ArrayUtils;
 import java.io.File;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 import static com.hama.crdl.MainActivity.exampleList;
-import static com.hama.crdl.MainActivity.mAdapter;
+
 public class AddActivity extends AppCompatActivity {
     private static AddActivity instance;
     WebView Browser;
@@ -41,10 +33,11 @@ public class AddActivity extends AppCompatActivity {
     Button bt_add;
     TextView URLBox;
     TextView StatusLabel;
-  public  TextView htmlCache;
+    TextView StatusMaxDLLabel;
+    public TextView htmlCache;
     public String hardsub_value;
     public String resolution_value;
-
+    private volatile boolean WaitThreadBool;
 
 
     @Override
@@ -62,6 +55,44 @@ public class AddActivity extends AppCompatActivity {
         instance = this;
         //Toast.makeText(AddActivity.this, hardsub_value, Toast.LENGTH_LONG).show();
         CB_Season = (Spinner) findViewById(R.id.CB_Season);
+        CB_Season.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parentView, View selectedItemView, int position, long id) {
+
+                CB_Lang_Class SeasonDropDown = (CB_Lang_Class) CB_Season.getSelectedItem();
+                String[] DropDownSplitWrapper =  SeasonDropDown.getValue().split("wrapper container-shadow hover-classes");
+
+
+                List<CB_Lang_Class> CB_LangList = new ArrayList<>();
+                ArrayUtils.reverse(DropDownSplitWrapper);
+                for (int i = 0; i < DropDownSplitWrapper.length -1; i++) {
+
+
+                    String[] Titel = DropDownSplitWrapper[i].split("title=\"");
+                    String[] Titel2 = Titel[1].split("\"");
+                    String[] URL = DropDownSplitWrapper[i].split("<a href=\"");
+                    String[] URL2 = URL[1].split("\" title=");
+                    CB_Lang_Class TitelDropDown = new CB_Lang_Class(Titel2[0], URL2[0]);
+                    CB_LangList.add(TitelDropDown);
+                    //i = CR_Uri_Sub.length;
+                    //CR_Uri_Sub_Final = CR_Uri_Sub2[0].replace("\\/", "/");
+                    Log.i("URLs", URL2[0]);
+                }
+                ArrayAdapter<CB_Lang_Class> adapter = new ArrayAdapter<CB_Lang_Class>(getContext(),android.R.layout.simple_spinner_item, CB_LangList);
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+
+                StatusLabel.setText("Status: selected");
+                CB_EpisodeStart.setAdapter(adapter);
+                CB_EpisodeStop.setAdapter(adapter);
+                bt_mass_add.setEnabled(true);
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parentView) {
+                // your code here
+            }
+
+        });
         CB_EpisodeStart = (Spinner) findViewById(R.id.CB_EpisodeStart);
         CB_EpisodeStop = (Spinner) findViewById(R.id.CB_EpisodeStop);
         CB_Season.setEnabled(false);
@@ -69,10 +100,27 @@ public class AddActivity extends AppCompatActivity {
         CB_EpisodeStop.setEnabled(false);
         bt_mass_add = (Button) findViewById(R.id.btadd_mass);
         bt_add = (Button) findViewById(R.id.btadd_dl);
-        //bt_mass_add.setEnabled(false);
+        bt_mass_add.setEnabled(false);
+        CB_Season.setEnabled(false);
+        CB_EpisodeStart.setEnabled(false);
+        CB_EpisodeStop.setEnabled(false);
         URLBox = (TextView) findViewById(R.id.urlTextBox2);
         StatusLabel = (TextView) findViewById(R.id.StatusText);
+        StatusMaxDLLabel = (TextView) findViewById(R.id.statusTextMassDL);
         htmlCache = (TextView) findViewById(R.id.htmlCache);
+        Browser = (WebView) findViewById(R.id.Browser);
+        Browser.getSettings().setJavaScriptEnabled(true);
+
+        Browser.addJavascriptInterface(new AddActivity.MyJavaScriptInterface(), "HTMLOUT");
+        Browser.setWebViewClient(new WebViewClient() {
+            // do your stuff here
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                Browser.loadUrl("javascript:window.HTMLOUT.processHTML('<head>'+document.getElementsByTagName('html')[0].innerHTML+'</head>');");
+
+
+            }
+        });
         htmlCache.addTextChangedListener(new TextWatcher() {
 
 
@@ -91,26 +139,37 @@ public class AddActivity extends AppCompatActivity {
                                                     ProcessHTML(htmlCache.getText().toString());
                                              }
                                          });
-                Browser = (WebView) findViewById(R.id.Browser);
+
 
     }
 
 
     public void dl_bt(View v) {
-     Browser.getSettings().setJavaScriptEnabled(true);
+        StatusLabel.setText("Status: loading website ...");
+        bt_add.setEnabled(false);
+        CB_Season.setEnabled(false);
+        CB_EpisodeStart.setEnabled(false);
+        CB_EpisodeStop.setEnabled(false);
 
-        Browser.addJavascriptInterface(new AddActivity.MyJavaScriptInterface(), "HTMLOUT");
-        Browser.setWebViewClient(new WebViewClient() {
-            // do your stuff here
-            @Override
-            public void onPageFinished(WebView view, String url) {
-                Browser.loadUrl("javascript:window.HTMLOUT.processHTML('<head>'+document.getElementsByTagName('html')[0].innerHTML+'</head>');");
-
-
-            }
-        });
 
         Browser.loadUrl(URLBox.getText().toString());
+
+
+    }
+    public void dl_mass_bt(View v) {
+        StatusMaxDLLabel.setText("Status: Starting ...");
+        bt_add.setEnabled(false);
+        if (CB_EpisodeStart.getSelectedItemPosition() > CB_EpisodeStop.getSelectedItemPosition()) {
+            int stop = CB_EpisodeStart.getSelectedItemPosition();
+            int start = CB_EpisodeStop.getSelectedItemPosition();
+            CB_EpisodeStart.setSelection(start);
+            CB_EpisodeStop.setSelection(stop);
+        }
+
+        ExampleRunnable runnable = new ExampleRunnable();
+        new Thread(runnable).start();
+
+        //Browser.loadUrl(URLBox.getText().toString());
 
     }
 
@@ -125,11 +184,22 @@ public class AddActivity extends AppCompatActivity {
     public String gethardsub() {
         return hardsub_value;
     }
-    public void LoadHTML(String html) {
-        htmlCache.setText(html);
+
+    public void LoadHTML(final String html) {
+
+        runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+                htmlCache.setText(html);
+            }
+        });
+
     }
 
     public void ProcessHTML(String html) {
+       //LoadHTML(html);
+
     BackgroudThread thread = new BackgroudThread(html, resolution_value,hardsub_value);
     thread.start();
  }
@@ -146,7 +216,88 @@ public class AddActivity extends AppCompatActivity {
 
 
         }
+    class ExampleRunnable implements Runnable {
+         String EpisodeURL;
+         int Current;
+        List<String> Episodes = new ArrayList<String>();
+         @Override
+        public void run() {
 
+
+
+            runOnUiThread(new Runnable() {
+
+                @Override
+                public void run() {
+
+
+
+                    for (int i = CB_EpisodeStart.getSelectedItemPosition(); i <= CB_EpisodeStop.getSelectedItemPosition(); i++) {
+
+                        CB_Lang_Class EpisodeURLs = (CB_Lang_Class) CB_EpisodeStop.getAdapter().getItem(i);
+                        Episodes.add(EpisodeURLs.getValue());
+                        Log.i("multi DL", "value: " + EpisodeURLs.getValue());
+                    }
+                }
+            });
+             try {
+                 Thread.sleep(5000);
+
+             } catch (InterruptedException e) {
+                 e.printStackTrace();
+             }
+             Log.i("multi DL", "anzahl: " + Episodes.size());
+
+            for (int i = 0; i < Episodes.size() ; i++) {
+                Current = i;
+                Log.i("multi DL", "i number on start: " + i);
+                for (int ii = 0; ii < Integer.MAX_VALUE; ii++) {
+
+
+                if (WaitThreadBool == true){
+                    try {
+                        Thread.sleep(2000);
+                        Log.i("multi DL", "sleep");
+                        Log.i("multi DL", Boolean.toString(WaitThreadBool));
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+                if (WaitThreadBool == false){
+                     WaitThreadBool = true;
+
+                    runOnUiThread(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            StatusMaxDLLabel.setText("Status: " + Integer.toString(Current +1) + "/" + Integer.toString(Episodes.size()));
+                            Log.i("multi DL", "dummy DL");
+                            Browser.loadUrl("https://www.crunchyroll.com/"+Episodes.get(Current));
+                            Log.i("multi DL", "dummy DL : https://www.crunchyroll.com" + Episodes.get(Current));
+                            Log.i("multi DL", "Current numbe: "+ Current);
+                        }
+
+                    });
+                    try {
+                        Thread.sleep(4000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                }
+
+                }
+
+
+
+
+            }
+
+
+
+        }
+    }
         class BackgroudThread extends Thread{
             String[] CR_Anime_Titel;
             String[] CR_Anime_Titel2;
@@ -162,6 +313,11 @@ public class AddActivity extends AppCompatActivity {
             String reso;
             String hardsub;
             String html;
+            String[] Thumbnail;
+            String[] Thumbnail2;
+            String Thumbnail3;
+            String[] SeasonDropDown;
+
             BackgroudThread(String html, String reso, String hardsub){
                 this.hardsub = hardsub;
                 this.reso = reso;
@@ -234,6 +390,10 @@ public class AddActivity extends AppCompatActivity {
 
                         }
                     });
+                    Thumbnail = html.split(Pattern.quote("\"thumbnail\":{\"url\":\""));
+                    Thumbnail2 = Thumbnail[1].split(Pattern.quote("\"}"));
+                    Thumbnail3 = Thumbnail2[0].replace("\\/", "/");
+                    Log.i("thumbnail", "thumbnail: " + Thumbnail3);
 
                     String downloadPath = Environment.getExternalStorageDirectory() + "/" + "Download/";
                     File dir = new File(downloadPath);
@@ -243,17 +403,25 @@ public class AddActivity extends AppCompatActivity {
                     }
                     try {
 
+
+
+
                         DL_URL = PlaylistDownloader.getdl_url(CR_Uri_Sub_Final, "x" + resolution_value.replace("p", ","));
 
                         PlaylistDownloader downloader =
                                 new PlaylistDownloader(DL_URL);
-                        exampleList.add(new ExampleItem(R.drawable.test1, CR_Final_Anime_Titel, "Starting the download...", 0));
+                        //exampleList.add(new ExampleItem(R.drawable.test1, CR_Final_Anime_Titel, "Starting the download...", 0));
+
+                        exampleList.add(new ExampleItem(Thumbnail3, CR_Final_Anime_Titel, "Starting the download...", 0));
 
                         runOnUiThread(new Runnable() {
 
                             @Override
                             public void run() {
-                                StatusLabel.setText("Status: Starting the download...");
+                                StatusLabel.setText("Status: idle");
+                                URLBox.setText(null);
+                                bt_add.setEnabled(true);
+                                WaitThreadBool = false;
 
                             }
                         });
@@ -264,13 +432,88 @@ public class AddActivity extends AppCompatActivity {
                     }
 
 
-                } else {
+                } else if (html.contains("season-dropdown content-menu block"))
+                    {
+                      runOnUiThread(new Runnable() {
+
+                            @Override
+                            public void run() {
+
+                                SeasonDropDown = html.split("season-dropdown content-menu block");
+                                ArrayUtils.reverse(SeasonDropDown);
+                                List<CB_Lang_Class> CB_LangList = new ArrayList<>();
+                                for (int i = 0; i < SeasonDropDown.length -1; i++) {
+
+
+                                    String[] Titel = SeasonDropDown[i].split("</a>");
+                                    String[] Titel2 = Titel[0].split(">");
+                                    CB_Lang_Class TitelDropDown = new CB_Lang_Class(Titel2[1], SeasonDropDown[i]);
+                                    CB_LangList.add(TitelDropDown);
+                                    //i = CR_Uri_Sub.length;
+                                    //CR_Uri_Sub_Final = CR_Uri_Sub2[0].replace("\\/", "/");
+
+
+                                }
+                                ArrayAdapter<CB_Lang_Class> adapter = new ArrayAdapter<CB_Lang_Class>(getContext(),android.R.layout.simple_spinner_item, CB_LangList);
+                                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                                CB_Season.setEnabled(true);
+                                CB_EpisodeStart.setEnabled(true);
+                                CB_EpisodeStop.setEnabled(true);
+                                StatusLabel.setText("Status: multi download detected - select below!");
+                                CB_Season.setAdapter(adapter);
+
+                            }
+                        });
+
+
+
+                    }
+
+                else if (html.contains("wrapper container-shadow hover-classes"))
+                {
+
+                    runOnUiThread(new Runnable() {
+
+                        @Override
+                        public void run() {
+                             String[] DropDownSplitWrapper =  html.split("wrapper container-shadow hover-classes");
+
+
+                            List<CB_Lang_Class> CB_LangList = new ArrayList<>();
+                            ArrayUtils.reverse(DropDownSplitWrapper);
+                            for (int i = 0; i < DropDownSplitWrapper.length -1; i++) {
+
+
+                                String[] Titel = DropDownSplitWrapper[i].split("title=\"");
+                                String[] Titel2 = Titel[1].split("\"");
+                                String[] URL = DropDownSplitWrapper[i].split("<a href=\"");
+                                String[] URL2 = URL[1].split("\" title=");
+                                CB_Lang_Class TitelDropDown = new CB_Lang_Class(Titel2[0], URL2[0]);
+                                CB_LangList.add(TitelDropDown);
+                                //i = CR_Uri_Sub.length;
+                                //CR_Uri_Sub_Final = CR_Uri_Sub2[0].replace("\\/", "/");
+                                Log.i("URLs", URL2[0]);
+                            }
+                            ArrayAdapter<CB_Lang_Class> adapter = new ArrayAdapter<CB_Lang_Class>(getContext(),android.R.layout.simple_spinner_item, CB_LangList);
+                            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+                            CB_Season.setEnabled(false);
+                            CB_EpisodeStart.setEnabled(true);
+                            CB_EpisodeStop.setEnabled(true);
+                            StatusLabel.setText("Status: selected");
+                            CB_EpisodeStart.setAdapter(adapter);
+                            CB_EpisodeStop.setAdapter(adapter);
+                            bt_mass_add.setEnabled(true);
+                        }
+                    });
+
+                }
+                else {
                     runOnUiThread(new Runnable() {
 
                         @Override
                         public void run() {
                             StatusLabel.setText("Status: something looks wrong, check the url.");
-
+                            bt_add.setEnabled(true);
                         }
                     });
 
